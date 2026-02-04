@@ -370,6 +370,7 @@ const FIELD_LABELS: Record<string, string> = {
   "channels.mattermost.requireMention": "Mattermost Require Mention",
   "channels.signal.account": "Signal Account",
   "channels.imessage.cliPath": "iMessage CLI Path",
+  "channels.imessage.probeTimeoutMs": "iMessage Probe Timeout (ms)",
   "agents.list[].skills": "Agent Skill Filter",
   "agents.list[].identity.avatar": "Agent Avatar",
   "discovery.mdns.mode": "mDNS Discovery Mode",
@@ -679,6 +680,8 @@ const FIELD_HELP: Record<string, string> = {
     "Allow Signal to write config in response to channel events/commands (default: true).",
   "channels.imessage.configWrites":
     "Allow iMessage to write config in response to channel events/commands (default: true).",
+  "channels.imessage.probeTimeoutMs":
+    "Timeout in ms for iMessage probe/RPC checks (default: 10000).",
   "channels.msteams.configWrites":
     "Allow Microsoft Teams to write config in response to channel events/commands (default: true).",
   "channels.discord.commands.native": 'Override native commands for Discord (bool or "auto").',

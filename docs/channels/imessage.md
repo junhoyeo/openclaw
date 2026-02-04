@@ -190,6 +190,7 @@ Notes:
 - Ensure the Mac is signed in to Messages, and Remote Login is enabled.
 - Use SSH keys so `ssh bot@mac-mini.tailnet-1234.ts.net` works without prompts.
 - `remoteHost` should match the SSH target so SCP can fetch attachments.
+- If SSH probes time out, set `channels.imessage.probeTimeoutMs` (default: 10000).
 
 Multi-account support: use `channels.imessage.accounts` with per-account config and optional `name`. See [`gateway/configuration`](/gateway/configuration#telegramaccounts--discordaccounts--slackaccounts--signalaccounts--imessageaccounts) for the shared pattern. Don't commit `~/.openclaw/openclaw.json` (it often contains tokens).
 
