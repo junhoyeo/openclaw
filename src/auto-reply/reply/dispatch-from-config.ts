@@ -297,6 +297,9 @@ export async function dispatchReplyFromConfig(params: {
 
     const shouldSendToolSummaries = ctx.ChatType !== "group" && ctx.CommandSource !== "native";
 
+    console.log(
+      `[DIAG] dispatchReplyFromConfig: calling getReplyFromConfig, shouldRouteToOriginating=${shouldRouteToOriginating}`,
+    );
     const replyResult = await (params.replyResolver ?? getReplyFromConfig)(
       ctx,
       {
@@ -322,6 +325,9 @@ export async function dispatchReplyFromConfig(params: {
             }
           : undefined,
         onBlockReply: (payload: ReplyPayload, context) => {
+          console.log(
+            `[DIAG] onBlockReply: called with text="${(payload.text ?? "").slice(0, 100)}...", shouldRouteToOriginating=${shouldRouteToOriginating}`,
+          );
           const run = async () => {
             // Accumulate block text for TTS generation after streaming
             if (payload.text) {
@@ -340,9 +346,12 @@ export async function dispatchReplyFromConfig(params: {
               ttsAuto: sessionTtsAuto,
             });
             if (shouldRouteToOriginating) {
+              console.log(`[DIAG] onBlockReply: routing to originating channel`);
               await sendPayloadAsync(ttsPayload, context?.abortSignal, false);
             } else {
-              dispatcher.sendBlockReply(ttsPayload);
+              console.log(`[DIAG] onBlockReply: calling dispatcher.sendBlockReply`);
+              const queued = dispatcher.sendBlockReply(ttsPayload);
+              console.log(`[DIAG] onBlockReply: dispatcher.sendBlockReply returned ${queued}`);
             }
           };
           return run();
@@ -351,7 +360,11 @@ export async function dispatchReplyFromConfig(params: {
       cfg,
     );
 
+    console.log(
+      `[DIAG] dispatchReplyFromConfig: getReplyFromConfig returned, replyResult=${replyResult ? "truthy" : "falsy"}, blockCount=${blockCount}`,
+    );
     const replies = replyResult ? (Array.isArray(replyResult) ? replyResult : [replyResult]) : [];
+    console.log(`[DIAG] dispatchReplyFromConfig: processing ${replies.length} final replies`);
     logVerbose(
       `dispatch-from-config: processing ${replies.length} final replies, ` +
         `shouldRouteToOriginating=${shouldRouteToOriginating}, ` +

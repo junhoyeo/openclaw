@@ -130,7 +130,9 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
       logVerbose(`reply-dispatcher: normalized payload is null for kind=${kind}, skipping`);
       return false;
     }
-    logVerbose(`reply-dispatcher: queuing delivery for kind=${kind}, pending will be ${pending + 1}`);
+    logVerbose(
+      `reply-dispatcher: queuing delivery for kind=${kind}, pending will be ${pending + 1}`,
+    );
     queuedCounts[kind] += 1;
     pending += 1;
 
@@ -142,6 +144,7 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
 
     sendChain = sendChain
       .then(async () => {
+        console.log(`[DIAG] reply-dispatcher: executing delivery for kind=${kind}`);
         logVerbose(`reply-dispatcher: executing delivery for kind=${kind}`);
         // Add human-like delay between block replies for natural rhythm.
         if (shouldDelay) {
@@ -151,6 +154,7 @@ export function createReplyDispatcher(options: ReplyDispatcherOptions): ReplyDis
           }
         }
         await options.deliver(normalized, { kind });
+        console.log(`[DIAG] reply-dispatcher: delivery completed for kind=${kind}`);
         logVerbose(`reply-dispatcher: delivery completed for kind=${kind}`);
       })
       .catch((err) => {
