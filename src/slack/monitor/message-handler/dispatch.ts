@@ -14,8 +14,8 @@ import { resolveSlackThreadTargets } from "../../threading.js";
 import { createSlackReplyDeliveryPlan, deliverReplies } from "../replies.js";
 
 export async function dispatchPreparedSlackMessage(prepared: PreparedSlackMessage) {
-  logVerbose(
-    `dispatchPreparedSlackMessage: ENTRY - channel=${prepared.message.channel}, user=${prepared.message.user}, replyTarget=${prepared.replyTarget}`,
+  console.log(
+    `[DIAG] dispatchPreparedSlackMessage: ENTRY - channel=${prepared.message.channel}, user=${prepared.message.user}, replyTarget=${prepared.replyTarget}`,
   );
   const { ctx, account, message, route } = prepared;
   const cfg = ctx.cfg;

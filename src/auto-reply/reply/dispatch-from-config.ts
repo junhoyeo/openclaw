@@ -87,8 +87,8 @@ export async function dispatchReplyFromConfig(params: {
   replyResolver?: typeof getReplyFromConfig;
 }): Promise<DispatchFromConfigResult> {
   const { ctx, cfg, dispatcher } = params;
-  logVerbose(
-    `dispatchReplyFromConfig: ENTRY - SessionKey=${ctx.SessionKey}, Provider=${ctx.Provider}, Surface=${ctx.Surface}, OriginatingChannel=${ctx.OriginatingChannel}`,
+  console.log(
+    `[DIAG] dispatchReplyFromConfig: ENTRY - SessionKey=${ctx.SessionKey}, Provider=${ctx.Provider}, Surface=${ctx.Surface}, OriginatingChannel=${ctx.OriginatingChannel}`,
   );
   const diagnosticsEnabled = isDiagnosticsEnabled(cfg);
   const channel = String(ctx.Surface ?? ctx.Provider ?? "unknown").toLowerCase();

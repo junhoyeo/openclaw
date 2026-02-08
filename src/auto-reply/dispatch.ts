@@ -21,12 +21,10 @@ export async function dispatchInboundMessage(params: {
   replyOptions?: Omit<GetReplyOptions, "onToolResult" | "onBlockReply">;
   replyResolver?: typeof import("./reply.js").getReplyFromConfig;
 }): Promise<DispatchInboundResult> {
-  const { logVerbose } = await import("../globals.js");
-  logVerbose(
-    `dispatchInboundMessage: ENTRY - SessionKey=${params.ctx.SessionKey}, Provider=${params.ctx.Provider}`,
+  console.log(
+    `[DIAG] dispatchInboundMessage: ENTRY - SessionKey=${params.ctx.SessionKey}, Provider=${params.ctx.Provider}`,
   );
   const finalized = finalizeInboundContext(params.ctx);
-  logVerbose(`dispatchInboundMessage: calling dispatchReplyFromConfig...`);
   const result = await dispatchReplyFromConfig({
     ctx: finalized,
     cfg: params.cfg,
@@ -34,9 +32,7 @@ export async function dispatchInboundMessage(params: {
     replyOptions: params.replyOptions,
     replyResolver: params.replyResolver,
   });
-  logVerbose(
-    `dispatchInboundMessage: dispatchReplyFromConfig completed - queuedFinal=${result.queuedFinal}`,
-  );
+  console.log(`[DIAG] dispatchInboundMessage: completed - queuedFinal=${result.queuedFinal}`);
   return result;
 }
 

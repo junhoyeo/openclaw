@@ -106,8 +106,8 @@ export function createSlackMessageHandler(params: {
   });
 
   return async (message, opts) => {
-    logVerbose(
-      `slack message-handler: received message, channel=${message.channel}, user=${message.user}, source=${opts.source}, text="${(message.text ?? "").slice(0, 50)}..."`,
+    console.log(
+      `[DIAG] slack message-handler: received message, channel=${message.channel}, user=${message.user}, source=${opts.source}, text="${(message.text ?? "").slice(0, 50)}..."`,
     );
     if (opts.source === "message" && message.type !== "message") {
       logVerbose(`slack message-handler: skipping - type=${message.type} is not "message"`);
