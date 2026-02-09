@@ -375,6 +375,11 @@ export async function dispatchReplyFromConfig(params: {
         `currentSurface=${currentSurface ?? "none"}`,
     );
 
+    // When block streaming delivered content, skip text-only final payloads to avoid duplicates.
+    // Block streaming already sent the content (either via routeReply or dispatcher.sendBlockReply).
+    // Only keep final payloads with media (not covered by text streaming).
+    const blockStreamingDelivered = blockCount > 0;
+
     let queuedFinal = false;
     let routedFinalCount = 0;
     for (let i = 0; i < replies.length; i++) {
@@ -382,6 +387,14 @@ export async function dispatchReplyFromConfig(params: {
       console.log(
         `[DIAG] dispatchReplyFromConfig: processing final reply ${i + 1}/${replies.length}, text="${(reply.text ?? "").slice(0, 100)}..."`,
       );
+      // Skip text-only final payloads already delivered via block streaming
+      const isTextOnly = reply.text && !reply.mediaUrl && !(reply.mediaUrls?.length ?? 0);
+      if (blockStreamingDelivered && isTextOnly) {
+        logVerbose(
+          `dispatch-from-config: skipping text-only final payload (already sent via block streaming, blockCount=${blockCount})`,
+        );
+        continue;
+      }
       logVerbose(
         `dispatch-from-config: processing reply, text=${(reply.text ?? "").slice(0, 100)}...`,
       );
