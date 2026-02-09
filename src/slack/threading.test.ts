@@ -75,4 +75,72 @@ describe("resolveSlackThreadTargets", () => {
     expect(context.messageThreadId).toBe("456");
     expect(context.replyToId).toBe("456");
   });
+
+  it("preserves thread context in DM when thread_ts exists (replyToMode=off)", () => {
+    const context = resolveSlackThreadContext({
+      replyToMode: "off",
+      message: {
+        type: "message",
+        channel: "D1",
+        channel_type: "im",
+        ts: "789",
+        thread_ts: "456",
+      },
+    });
+
+    expect(context.isThreadReply).toBe(true);
+    expect(context.messageThreadId).toBe("456");
+    expect(context.replyToId).toBe("456");
+  });
+
+  it("preserves thread context in DM when thread_ts equals ts (edge case)", () => {
+    const context = resolveSlackThreadContext({
+      replyToMode: "off",
+      message: {
+        type: "message",
+        channel: "D1",
+        channel_type: "im",
+        ts: "456",
+        thread_ts: "456",
+      },
+    });
+
+    expect(context.isThreadReply).toBe(true);
+    expect(context.messageThreadId).toBe("456");
+    expect(context.replyToId).toBe("456");
+  });
+
+  it("preserves thread context in DM with parent_user_id", () => {
+    const context = resolveSlackThreadContext({
+      replyToMode: "off",
+      message: {
+        type: "message",
+        channel: "D1",
+        channel_type: "im",
+        ts: "789",
+        thread_ts: "456",
+        parent_user_id: "U123",
+      },
+    });
+
+    expect(context.isThreadReply).toBe(true);
+    expect(context.messageThreadId).toBe("456");
+    expect(context.replyToId).toBe("456");
+  });
+
+  it("does not set messageThreadId for new DM message (no thread_ts)", () => {
+    const context = resolveSlackThreadContext({
+      replyToMode: "off",
+      message: {
+        type: "message",
+        channel: "D1",
+        channel_type: "im",
+        ts: "123",
+      },
+    });
+
+    expect(context.isThreadReply).toBe(false);
+    expect(context.messageThreadId).toBeUndefined();
+    expect(context.replyToId).toBe("123");
+  });
 });
