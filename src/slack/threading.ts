@@ -17,10 +17,13 @@ export function resolveSlackThreadContext(params: {
   const eventTs = params.message.event_ts;
   const messageTs = params.message.ts ?? eventTs;
   const hasThreadTs = typeof incomingThreadTs === "string" && incomingThreadTs.length > 0;
-  const isThreadReply =
-    hasThreadTs && (incomingThreadTs !== messageTs || Boolean(params.message.parent_user_id));
+  // Simplify: if we have thread_ts, we're in a thread - always preserve context.
+  // The old logic failed when thread_ts === ts AND no parent_user_id (edge case in DM threads).
+  const isThreadReply = hasThreadTs;
   const replyToId = incomingThreadTs ?? messageTs;
-  const messageThreadId = isThreadReply
+  // Always preserve thread context when thread_ts exists.
+  // This ensures replies stay in the same thread even when replyToMode is "off" (DM default).
+  const messageThreadId = hasThreadTs
     ? incomingThreadTs
     : params.replyToMode === "all"
       ? messageTs
