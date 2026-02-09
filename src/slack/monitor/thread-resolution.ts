@@ -87,11 +87,17 @@ export function createSlackThreadTsResolver(params: {
       source: "message" | "app_mention";
     }): Promise<SlackMessageEvent> => {
       const { message } = request;
-      if (!message.parent_user_id || message.thread_ts || !message.ts) {
+      const messageTs = message.ts;
+      if (!messageTs) {
+        return message;
+      }
+      const shouldAttemptResolve =
+        !message.thread_ts && (Boolean(message.parent_user_id) || request.source === "app_mention");
+      if (!shouldAttemptResolve) {
         return message;
       }
 
-      const cacheKey = `${message.channel}:${message.ts}`;
+      const cacheKey = `${message.channel}:${messageTs}`;
       const now = Date.now();
       const cached = getCached(cacheKey, now);
       if (cached !== undefined) {
@@ -109,7 +115,7 @@ export function createSlackThreadTsResolver(params: {
         pending = resolveThreadTsFromHistory({
           client: params.client,
           channelId: message.channel,
-          messageTs: message.ts,
+          messageTs,
         });
         inflight.set(cacheKey, pending);
       }
