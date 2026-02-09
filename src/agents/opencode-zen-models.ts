@@ -73,7 +73,16 @@ export const OPENCODE_ZEN_MODEL_ALIASES: Record<string, string> = {
 
   // GLM (free)
   glm: "glm-4.7",
-  "glm-free": "glm-4.7",
+  "glm-free": "glm-4.7-free",
+
+  // Kimi K2 family
+  kimi: "kimi-k2.5",
+  "kimi-k2": "kimi-k2",
+  "kimi-k2.5": "kimi-k2.5",
+  "kimi-free": "kimi-k2.5-free",
+  "kimi-k2.5-free": "kimi-k2.5-free",
+  "kimi-thinking": "kimi-k2-thinking",
+  "kimi-k2-thinking": "kimi-k2-thinking",
 };
 
 /**
@@ -98,6 +107,9 @@ export function resolveOpencodeZenModelApi(modelId: string): ModelApi {
   }
   if (lower.startsWith("gemini-")) {
     return "google-generative-ai";
+  }
+  if (lower.startsWith("kimi-")) {
+    return "openai-completions";
   }
   return "openai-completions";
 }
@@ -134,6 +146,7 @@ const MODEL_COSTS: Record<
   },
   "gpt-5.1": { input: 1.07, output: 8.5, cacheRead: 0.107, cacheWrite: 0 },
   "glm-4.7": { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+  "glm-4.7-free": { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   "gemini-3-flash": { input: 0.5, output: 3, cacheRead: 0.05, cacheWrite: 0 },
   "gpt-5.1-codex-max": {
     input: 1.25,
@@ -142,6 +155,10 @@ const MODEL_COSTS: Record<
     cacheWrite: 0,
   },
   "gpt-5.2": { input: 1.75, output: 14, cacheRead: 0.175, cacheWrite: 0 },
+  "kimi-k2.5": { input: 0.5, output: 2, cacheRead: 0.05, cacheWrite: 0 },
+  "kimi-k2.5-free": { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+  "kimi-k2": { input: 0.5, output: 2, cacheRead: 0.05, cacheWrite: 0 },
+  "kimi-k2-thinking": { input: 0.8, output: 3.2, cacheRead: 0.08, cacheWrite: 0 },
 };
 
 const DEFAULT_COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
@@ -154,9 +171,14 @@ const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
   "gpt-5.1-codex-mini": 400000,
   "gpt-5.1": 400000,
   "glm-4.7": 204800,
+  "glm-4.7-free": 204800,
   "gemini-3-flash": 1048576,
   "gpt-5.1-codex-max": 400000,
   "gpt-5.2": 400000,
+  "kimi-k2.5": 256000,
+  "kimi-k2.5-free": 256000,
+  "kimi-k2": 256000,
+  "kimi-k2-thinking": 256000,
 };
 
 function getDefaultContextWindow(modelId: string): number {
@@ -171,25 +193,32 @@ const MODEL_MAX_TOKENS: Record<string, number> = {
   "gpt-5.1-codex-mini": 128000,
   "gpt-5.1": 128000,
   "glm-4.7": 131072,
+  "glm-4.7-free": 131072,
   "gemini-3-flash": 65536,
   "gpt-5.1-codex-max": 128000,
   "gpt-5.2": 128000,
+  "kimi-k2.5": 8192,
+  "kimi-k2.5-free": 8192,
+  "kimi-k2": 8192,
+  "kimi-k2-thinking": 8192,
 };
 
 function getDefaultMaxTokens(modelId: string): number {
   return MODEL_MAX_TOKENS[modelId] ?? 8192;
 }
 
-/**
- * Build a ModelDefinitionConfig from a model ID.
- */
+function isReasoningModel(modelId: string): boolean {
+  const lower = modelId.toLowerCase();
+  return lower.includes("thinking") || lower.includes("reason");
+}
+
 function buildModelDefinition(modelId: string): ModelDefinitionConfig {
+  const isReasoning = isReasoningModel(modelId);
   return {
     id: modelId,
     name: formatModelName(modelId),
     api: resolveOpencodeZenModelApi(modelId),
-    // Treat Zen models as reasoning-capable so defaults pick thinkLevel="low" unless users opt out.
-    reasoning: true,
+    reasoning: isReasoning,
     input: supportsImageInput(modelId) ? ["text", "image"] : ["text"],
     cost: MODEL_COSTS[modelId] ?? DEFAULT_COST,
     contextWindow: getDefaultContextWindow(modelId),
@@ -208,9 +237,14 @@ const MODEL_NAMES: Record<string, string> = {
   "gpt-5.1-codex-mini": "GPT-5.1 Codex Mini",
   "gpt-5.1": "GPT-5.1",
   "glm-4.7": "GLM-4.7",
+  "glm-4.7-free": "GLM-4.7 Free",
   "gemini-3-flash": "Gemini 3 Flash",
   "gpt-5.1-codex-max": "GPT-5.1 Codex Max",
   "gpt-5.2": "GPT-5.2",
+  "kimi-k2.5": "Kimi K2.5",
+  "kimi-k2.5-free": "Kimi K2.5 Free",
+  "kimi-k2": "Kimi K2",
+  "kimi-k2-thinking": "Kimi K2 Thinking",
 };
 
 function formatModelName(modelId: string): string {
@@ -236,9 +270,14 @@ export function getOpencodeZenStaticFallbackModels(): ModelDefinitionConfig[] {
     "gpt-5.1-codex-mini",
     "gpt-5.1",
     "glm-4.7",
+    "glm-4.7-free",
     "gemini-3-flash",
     "gpt-5.1-codex-max",
     "gpt-5.2",
+    "kimi-k2.5",
+    "kimi-k2.5-free",
+    "kimi-k2",
+    "kimi-k2-thinking",
   ];
 
   return modelIds.map(buildModelDefinition);
