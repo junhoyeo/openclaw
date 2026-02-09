@@ -36,9 +36,16 @@ export async function runGatewayLoop(params: {
     gatewayLog.info(`received ${signal}; ${isRestart ? "restarting" : "shutting down"}`);
 
     const forceExitTimer = setTimeout(() => {
-      gatewayLog.error("shutdown timed out; exiting without full cleanup");
-      cleanupSignals();
-      params.runtime.exit(0);
+      if (isRestart) {
+        gatewayLog.warn("shutdown timed out; forcing restart without full cleanup");
+        server = null;
+        shuttingDown = false;
+        restartResolver?.();
+      } else {
+        gatewayLog.error("shutdown timed out; exiting without full cleanup");
+        cleanupSignals();
+        params.runtime.exit(0);
+      }
     }, 5000);
 
     void (async () => {
