@@ -18,9 +18,6 @@ export async function deliverReplies(params: {
   textLimit: number;
   replyThreadTs?: string;
 }) {
-  console.log(
-    `[DIAG] deliverReplies: ENTRY - target=${params.target}, replies=${params.replies.length}, threadTs=${params.replyThreadTs}`,
-  );
   logVerbose(
     `slack deliverReplies: starting, target=${params.target}, replies=${params.replies.length}`,
   );
@@ -39,9 +36,6 @@ export async function deliverReplies(params: {
         logVerbose(`slack deliverReplies: skipping silent/empty text`);
         continue;
       }
-      console.log(
-        `[DIAG] deliverReplies: calling sendMessageSlack, target=${params.target}, text="${trimmed.slice(0, 100)}..."`,
-      );
       logVerbose(
         `slack deliverReplies: sending text to ${params.target}, text=${trimmed.slice(0, 100)}...`,
       );
@@ -50,7 +44,6 @@ export async function deliverReplies(params: {
         threadTs,
         accountId: params.accountId,
       });
-      console.log(`[DIAG] deliverReplies: sendMessageSlack completed for ${params.target}`);
       logVerbose(`slack deliverReplies: sendMessageSlack completed for ${params.target}`);
     } else {
       let first = true;
