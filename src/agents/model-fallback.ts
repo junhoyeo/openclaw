@@ -16,6 +16,7 @@ import {
   buildConfiguredAllowlistKeys,
   buildModelAliasIndex,
   modelKey,
+  normalizeProviderId,
   resolveConfiguredModelRef,
   resolveModelRefFromString,
 } from "./model-selection.js";
@@ -33,6 +34,10 @@ type FallbackAttempt = {
   status?: number;
   code?: string;
 };
+
+function isFreeModelId(modelId: string): boolean {
+  return modelId.toLowerCase().endsWith("-free");
+}
 
 function isAbortError(err: unknown): boolean {
   if (!err || typeof err !== "object") {
@@ -247,7 +252,15 @@ export async function runWithModelFallback<T>(params: {
       });
       const isAnyProfileAvailable = profileIds.some((id) => !isProfileInCooldown(authStore, id));
 
-      if (profileIds.length > 0 && !isAnyProfileAvailable) {
+      // OpenCode Zen has both free and paid models under a single API key.
+      // If a free model hits a rate limit, the profile may be put in cooldown.
+      // We still want to try paid (non-"-free") models so fallback chains like:
+      //   opencode/*-free -> opencode/* -> anthropic/*
+      // can work.
+      const bypassCooldown =
+        normalizeProviderId(candidate.provider) === "opencode" && !isFreeModelId(candidate.model);
+
+      if (profileIds.length > 0 && !isAnyProfileAvailable && !bypassCooldown) {
         // All profiles for this provider are in cooldown; skip without attempting
         attempts.push({
           provider: candidate.provider,

@@ -180,6 +180,69 @@ describe("runWithModelFallback", () => {
     }
   });
 
+  it("still tries non-free opencode models when opencode profile is in cooldown", async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
+    const provider = "opencode";
+    const profileId = `${provider}:default`;
+
+    const store: AuthProfileStore = {
+      version: AUTH_STORE_VERSION,
+      profiles: {
+        [profileId]: {
+          type: "api_key",
+          provider,
+          key: "test-key",
+        },
+      },
+      usageStats: {
+        [profileId]: {
+          cooldownUntil: Date.now() + 60_000,
+        },
+      },
+    };
+
+    saveAuthProfileStore(store, tempDir);
+
+    const cfg = makeCfg({
+      agents: {
+        defaults: {
+          model: {
+            primary: "opencode/kimi-k2.5-free",
+            fallbacks: ["opencode/kimi-k2.5", "fallback/ok-model"],
+          },
+        },
+      },
+    });
+
+    const run = vi.fn().mockImplementation(async (providerId, modelId) => {
+      if (providerId === "opencode" && modelId === "kimi-k2.5") {
+        return "ok";
+      }
+      if (providerId === "fallback") {
+        return "fallback-ok";
+      }
+      throw new Error(`unexpected provider: ${providerId}/${modelId}`);
+    });
+
+    try {
+      const result = await runWithModelFallback({
+        cfg,
+        provider,
+        model: "kimi-k2.5-free",
+        agentDir: tempDir,
+        run,
+      });
+
+      expect(result.result).toBe("ok");
+      expect(run.mock.calls).toEqual([["opencode", "kimi-k2.5"]]);
+      expect(result.attempts[0]?.provider).toBe("opencode");
+      expect(result.attempts[0]?.model).toBe("kimi-k2.5-free");
+      expect(result.attempts[0]?.reason).toBe("rate_limit");
+    } finally {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it("does not skip when any profile is available", async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-"));
     const provider = `cooldown-mixed-${crypto.randomUUID()}`;
