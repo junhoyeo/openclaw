@@ -1,12 +1,13 @@
-import type { ResolvedSlackAccount } from "../accounts.js";
-import type { SlackMessageEvent } from "../types.js";
-import type { SlackMonitorContext } from "./context.js";
 import { hasControlCommand } from "../../auto-reply/command-detection.js";
 import {
   createInboundDebouncer,
   resolveInboundDebounceMs,
 } from "../../auto-reply/inbound-debounce.js";
 import { logVerbose } from "../../globals.js";
+import type { ResolvedSlackAccount } from "../accounts.js";
+import type { SlackMessageEvent } from "../types.js";
+import { stripSlackMentionsForCommandDetection } from "./commands.js";
+import type { SlackMonitorContext } from "./context.js";
 import { dispatchPreparedSlackMessage } from "./message-handler/dispatch.js";
 import { prepareSlackMessage } from "./message-handler/prepare.js";
 import { createSlackThreadTsResolver } from "./thread-resolution.js";
@@ -51,7 +52,8 @@ export function createSlackMessageHandler(params: {
       if (entry.message.files && entry.message.files.length > 0) {
         return false;
       }
-      return !hasControlCommand(text, ctx.cfg);
+      const textForCommandDetection = stripSlackMentionsForCommandDetection(text);
+      return !hasControlCommand(textForCommandDetection, ctx.cfg);
     },
     onFlush: async (entries) => {
       logVerbose(`slack message-handler: onFlush called with ${entries.length} entries`);

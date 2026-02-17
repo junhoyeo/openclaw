@@ -1,6 +1,6 @@
-import type { SlackMonitorContext } from "./context.js";
 import { readChannelAllowFromStore } from "../../pairing/pairing-store.js";
 import { allowListMatches, normalizeAllowList, normalizeAllowListLower } from "./allow-list.js";
+import type { SlackMonitorContext } from "./context.js";
 
 const ALLOW_FROM_CACHE_TTL_MS = 15_000;
 

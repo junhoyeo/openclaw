@@ -8,7 +8,14 @@ on:
       - "v*"
     paths-ignore:
       - "docs/**"
-      - "*.md"
+      - "**/*.md"
+      - "**/*.mdx"
+      - ".agents/**"
+      - "skills/**"
+
+concurrency:
+  group: docker-release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
