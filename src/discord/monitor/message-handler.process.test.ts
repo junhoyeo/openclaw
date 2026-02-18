@@ -113,7 +113,7 @@ describe("processDiscordMessage ack reactions", () => {
     ]);
   });
 
-  it("debounces intermediate phase reactions and jumps to done for short runs", async () => {
+  it("only shows initial emoji and clears on done (no phase transitions)", async () => {
     dispatchInboundMessage.mockImplementationOnce(
       async (params: {
         replyOptions?: {
@@ -136,12 +136,12 @@ describe("processDiscordMessage ack reactions", () => {
       reactMessageDiscord.mock.calls as unknown as Array<[unknown, unknown, string]>
     ).map((call) => call[2]);
     expect(emojis).toContain("👀");
-    expect(emojis).toContain("✅");
+    expect(emojis).not.toContain("✅");
     expect(emojis).not.toContain("🧠");
     expect(emojis).not.toContain("💻");
   });
 
-  it("shows stall emojis for long no-progress runs", async () => {
+  it("does not show stall emojis for long runs (only initial emoji)", async () => {
     vi.useFakeTimers();
     dispatchInboundMessage.mockImplementationOnce(async () => {
       await new Promise((resolve) => {
@@ -166,8 +166,9 @@ describe("processDiscordMessage ack reactions", () => {
     const emojis = (
       reactMessageDiscord.mock.calls as unknown as Array<[unknown, unknown, string]>
     ).map((call) => call[2]);
-    expect(emojis).toContain("⏳");
-    expect(emojis).toContain("⚠️");
-    expect(emojis).toContain("✅");
+    expect(emojis).toContain("👀");
+    expect(emojis).not.toContain("⏳");
+    expect(emojis).not.toContain("⚠️");
+    expect(emojis).not.toContain("✅");
   });
 });

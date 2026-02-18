@@ -1,4 +1,6 @@
 import { ChannelType } from "@buape/carbon";
+import type { ReplyPayload } from "../../auto-reply/types.js";
+import type { DiscordMessagePreflightContext } from "./message-handler.preflight.js";
 import { resolveAckReaction, resolveHumanDelayConfig } from "../../agents/identity.js";
 import { resolveChunkMode } from "../../auto-reply/chunk.js";
 import { dispatchInboundMessage } from "../../auto-reply/dispatch.js";
@@ -9,7 +11,6 @@ import {
 } from "../../auto-reply/reply/history.js";
 import { finalizeInboundContext } from "../../auto-reply/reply/inbound-context.js";
 import { createReplyDispatcherWithTyping } from "../../auto-reply/reply/reply-dispatcher.js";
-import type { ReplyPayload } from "../../auto-reply/types.js";
 import { shouldAckReaction as shouldAckReactionGate } from "../../channels/ack-reactions.js";
 import { logTypingFailure, logAckFailure } from "../../channels/logging.js";
 import { createReplyPrefixOptions } from "../../channels/reply-prefix.js";
@@ -25,7 +26,6 @@ import { truncateUtf16Safe } from "../../utils.js";
 import { reactMessageDiscord, removeReactionDiscord } from "../send.js";
 import { normalizeDiscordSlug, resolveDiscordOwnerAllowFrom } from "./allow-list.js";
 import { resolveTimestampMs } from "./format.js";
-import type { DiscordMessagePreflightContext } from "./message-handler.preflight.js";
 import {
   buildDiscordMediaPayload,
   resolveDiscordMessageText,
@@ -63,7 +63,7 @@ const CODING_STATUS_TOOL_TOKENS = [
 
 const WEB_STATUS_TOOL_TOKENS = ["web_search", "web-search", "web_fetch", "web-fetch", "browser"];
 
-function resolveToolStatusEmoji(toolName?: string): string {
+function _resolveToolStatusEmoji(toolName?: string): string {
   const normalized = toolName?.trim().toLowerCase() ?? "";
   if (!normalized) {
     return DISCORD_STATUS_TOOL_EMOJI;
@@ -189,7 +189,7 @@ function createDiscordStatusReactionController(params: {
     }, DISCORD_STATUS_STALL_HARD_MS);
   };
 
-  const setPhase = (emoji: string) => {
+  const _setPhase = (emoji: string) => {
     if (!params.enabled || finished) {
       return Promise.resolve();
     }
@@ -197,7 +197,7 @@ function createDiscordStatusReactionController(params: {
     return requestEmoji(emoji);
   };
 
-  const setTerminal = async (emoji: string) => {
+  const _setTerminal = async (emoji: string) => {
     if (!params.enabled) {
       return;
     }
@@ -259,13 +259,12 @@ function createDiscordStatusReactionController(params: {
 
   return {
     setQueued: () => {
-      scheduleStallTimers();
       return requestEmoji(params.initialEmoji, { immediate: true });
     },
-    setThinking: () => setPhase(DISCORD_STATUS_THINKING_EMOJI),
-    setTool: (toolName?: string) => setPhase(resolveToolStatusEmoji(toolName)),
-    setDone: () => setTerminal(DISCORD_STATUS_DONE_EMOJI),
-    setError: () => setTerminal(DISCORD_STATUS_ERROR_EMOJI),
+    setThinking: () => Promise.resolve(),
+    setTool: (_toolName?: string) => Promise.resolve(),
+    setDone: () => clear(),
+    setError: () => clear(),
     clear,
     restoreInitial,
   };
