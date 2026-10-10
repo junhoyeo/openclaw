@@ -74,7 +74,10 @@ describe("createTelegramBot", () => {
       description: string;
     }>;
     const skillCommands = resolveSkillCommands(config);
-    const native = listNativeCommandSpecsForConfig(config, { skillCommands }).map((command) => ({
+    const native = listNativeCommandSpecsForConfig(config, {
+      skillCommands,
+      provider: "telegram",
+    }).map((command) => ({
       command: command.name,
       description: command.description,
     }));
@@ -115,7 +118,10 @@ describe("createTelegramBot", () => {
       description: string;
     }>;
     const skillCommands = resolveSkillCommands(config);
-    const native = listNativeCommandSpecsForConfig(config, { skillCommands }).map((command) => ({
+    const native = listNativeCommandSpecsForConfig(config, {
+      skillCommands,
+      provider: "telegram",
+    }).map((command) => ({
       command: command.name,
       description: command.description,
     }));
@@ -151,7 +157,9 @@ describe("createTelegramBot", () => {
       { command: "custom_backup", description: "Git backup" },
       { command: "custom_generate", description: "Create an image" },
     ]);
-    const reserved = new Set(listNativeCommandSpecs().map((command) => command.name));
+    const reserved = new Set(
+      listNativeCommandSpecs({ provider: "telegram" }).map((command) => command.name),
+    );
     expect(registered.some((command) => reserved.has(command.command))).toBe(false);
   });
 

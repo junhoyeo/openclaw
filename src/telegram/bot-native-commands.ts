@@ -310,7 +310,7 @@ export const registerTelegramNativeCommands = ({
       })
     : [];
   const reservedCommands = new Set(
-    listNativeCommandSpecs().map((command) => command.name.toLowerCase()),
+    listNativeCommandSpecs({ provider: "telegram" }).map((command) => command.name.toLowerCase()),
   );
   for (const command of skillCommands) {
     reservedCommands.add(command.name.toLowerCase());

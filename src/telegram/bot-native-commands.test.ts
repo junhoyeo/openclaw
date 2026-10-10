@@ -112,6 +112,51 @@ describe("registerTelegramNativeCommands", () => {
     });
   });
 
+  it("registers valid Telegram native names and rejects custom export command collisions", () => {
+    const cfg: OpenClawConfig = { commands: { native: true, nativeSkills: false } };
+    const setMyCommands = vi.fn().mockResolvedValue(undefined);
+    const command = vi.fn();
+    const runtimeError = vi.fn();
+
+    registerTelegramNativeCommands({
+      ...buildParams(cfg),
+      bot: {
+        api: { setMyCommands },
+        command,
+      } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
+      runtime: { error: runtimeError } as unknown as RuntimeEnv,
+      telegramCfg: {
+        customCommands: [
+          { command: "export_session", description: "Custom export" },
+          { command: "custom_backup", description: "Git backup" },
+        ],
+      },
+      nativeSkillsEnabled: false,
+    });
+
+    const registered = setMyCommands.mock.calls[0]?.[0] as Array<{
+      command: string;
+      description: string;
+    }>;
+    expect(registered).toBeDefined();
+    expect(registered?.every(({ command }) => /^[a-z0-9_]{1,32}$/.test(command))).toBe(true);
+    expect(registered?.filter(({ command }) => command === "export_session")).toEqual([
+      {
+        command: "export_session",
+        description: "Export current session to HTML file with full system prompt.",
+      },
+    ]);
+    expect(registered).toContainEqual({ command: "custom_backup", description: "Git backup" });
+    expect(registered).not.toContainEqual({
+      command: "export_session",
+      description: "Custom export",
+    });
+    expect(command).toHaveBeenCalledWith("export_session", expect.any(Function));
+    expect(command).not.toHaveBeenCalledWith("export-session", expect.any(Function));
+    expect(runtimeError).toHaveBeenCalledWith(expect.stringContaining("export_session"));
+    expect(listSkillCommandsForAgents).not.toHaveBeenCalled();
+  });
+
   it("truncates Telegram command registration to 100 commands", () => {
     const cfg: OpenClawConfig = {
       commands: { native: false },

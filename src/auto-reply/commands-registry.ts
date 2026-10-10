@@ -122,6 +122,9 @@ const NATIVE_NAME_OVERRIDES: Record<string, Record<string, string>> = {
   discord: {
     tts: "voice",
   },
+  telegram: {
+    "export-session": "export_session",
+  },
 };
 
 function resolveNativeName(command: ChatCommandDefinition, provider?: string): string | undefined {

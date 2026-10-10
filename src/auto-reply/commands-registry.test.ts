@@ -95,6 +95,28 @@ describe("commands registry", () => {
     expect(findCommandByNativeName("tts", "discord")).toBeUndefined();
   });
 
+  it("uses valid Telegram native names without changing other providers or text aliases", () => {
+    const cfg = { commands: { native: true, config: true, debug: true, bash: true } };
+    const specs = listNativeCommandSpecsForConfig(cfg, { provider: "telegram" });
+
+    expect(specs.every((spec) => /^[a-z0-9_]{1,32}$/.test(spec.name))).toBe(true);
+    expect(specs.some((spec) => spec.name === "export_session")).toBe(true);
+    expect(specs.some((spec) => spec.name === "export-session")).toBe(false);
+    expect(listNativeCommandSpecs({ provider: "telegram" })).toEqual(specs);
+
+    const exportCommand = findCommandByNativeName("export_session", "telegram");
+    expect(exportCommand?.key).toBe("export-session");
+    expect(exportCommand?.textAliases).toEqual(["/export-session", "/export"]);
+    expect(findCommandByNativeName("export-session", "telegram")).toBeUndefined();
+    expect(findCommandByNativeName("export-session")?.key).toBe("export-session");
+    expect(findCommandByNativeName("export-session", "discord")?.key).toBe("export-session");
+    expect(findCommandByNativeName("export-session", "slack")?.key).toBe("export-session");
+    if (!exportCommand) {
+      throw new Error("Telegram export command must resolve to its definition");
+    }
+    expect(buildCommandTextFromArgs(exportCommand)).toBe("/export-session");
+  });
+
   it("detects known text commands", () => {
     const detection = getCommandDetection();
     expect(detection.exact.has("/commands")).toBe(true);
