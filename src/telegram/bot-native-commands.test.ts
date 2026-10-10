@@ -157,6 +157,39 @@ describe("registerTelegramNativeCommands", () => {
     expect(listSkillCommandsForAgents).not.toHaveBeenCalled();
   });
 
+  it("caps valid native skill menus while keeping hidden skill handlers registered", () => {
+    const cfg: OpenClawConfig = { commands: { native: true, nativeSkills: true } };
+    const skillCommands = Array.from({ length: 110 }, (_, index) => ({
+      name: `skill_${index}`,
+      skillName: `skill-${index}`,
+      description: `Skill ${index}`,
+    }));
+    listSkillCommandsForAgents.mockReturnValue(skillCommands as never);
+    const setMyCommands = vi.fn().mockResolvedValue(undefined);
+    const command = vi.fn();
+
+    registerTelegramNativeCommands({
+      ...buildParams(cfg),
+      bot: {
+        api: { setMyCommands },
+        command,
+      } as unknown as Parameters<typeof registerTelegramNativeCommands>[0]["bot"],
+      nativeSkillsEnabled: true,
+    });
+
+    const registered = setMyCommands.mock.calls[0]?.[0] as Array<{
+      command: string;
+      description: string;
+    }>;
+    expect(registered).toHaveLength(100);
+    expect(registered.every(({ command }) => /^[a-z0-9_]{1,32}$/.test(command))).toBe(true);
+    expect(registered.some(({ command }) => command === "export_session")).toBe(true);
+    expect(registered.some(({ command }) => command === "skill_0")).toBe(true);
+    expect(registered.some(({ command }) => command === "skill_109")).toBe(false);
+    expect(command).toHaveBeenCalledWith("export_session", expect.any(Function));
+    expect(command).toHaveBeenCalledWith("skill_109", expect.any(Function));
+  });
+
   it("truncates Telegram command registration to 100 commands", () => {
     const cfg: OpenClawConfig = {
       commands: { native: false },
