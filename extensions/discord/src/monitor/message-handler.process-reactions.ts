@@ -210,12 +210,10 @@ export function createDiscordMessageReactionRuntime(params: {
         void statusReactions.restoreInitial();
         return;
       }
-      if (result.dispatchError || result.finalDeliveryFailed) {
-        await statusReactions.setError();
-      } else {
-        await statusReactions.setDone();
-      }
-      void statusReactions.restoreInitial();
+      // Fork behavior (junhoyeo/openclaw 131dd49f659): the acknowledgement is
+      // transient, so a settled turn clears it on success and on failure instead
+      // of retaining it or replacing it with a terminal emoji.
+      await statusReactions.clear();
     }
   };
 

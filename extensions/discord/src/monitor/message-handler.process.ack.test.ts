@@ -1,4 +1,4 @@
-import { DEFAULT_EMOJIS, DEFAULT_TIMING } from "openclaw/plugin-sdk/channel-feedback";
+import { DEFAULT_TIMING } from "openclaw/plugin-sdk/channel-feedback";
 import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
 import { describe, expect, it, vi, onTestFinished } from "vitest";
 import {
@@ -139,7 +139,7 @@ describe("processDiscordMessage ack reactions", () => {
     }
   });
 
-  it("marks automatic visible replies as failed when final Discord delivery fails", async () => {
+  it("clears the acknowledgement when final Discord delivery fails", async () => {
     dispatchInboundMessage.mockResolvedValueOnce({
       queuedFinal: false,
       counts: { final: 0, tool: 0, block: 0 },
@@ -150,12 +150,12 @@ describe("processDiscordMessage ack reactions", () => {
 
     await runProcessDiscordMessage(ctx);
 
-    const emojis = getReactionEmojis();
-    expect(emojis).toContain(DEFAULT_EMOJIS.error);
-    expect(emojis).not.toContain(DEFAULT_EMOJIS.done);
+    // Fork behavior: failures clear the transient acknowledgement instead of adding a terminal emoji.
+    expect(getReactionEmojis()).toEqual(["👀"]);
+    expect(sendMocks.removeReactionDiscord.mock.calls.map((call) => call[2])).toEqual(["👀"]);
   });
 
-  it("marks a recovered agent failure as failed after delivering its visible error reply", async () => {
+  it("clears the acknowledgement after delivering a recovered agent failure reply", async () => {
     readAgentRunTerminalOutcome.mockReturnValueOnce("failed");
     dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {
       await params?.dispatcher.sendFinalReply({ text: "Something failed", isError: true });
@@ -171,9 +171,8 @@ describe("processDiscordMessage ack reactions", () => {
     await runProcessDiscordMessage(ctx);
 
     expect(deliverDiscordReply).toHaveBeenCalledTimes(1);
-    const emojis = getReactionEmojis();
-    expect(emojis).toContain(DEFAULT_EMOJIS.error);
-    expect(emojis).not.toContain(DEFAULT_EMOJIS.done);
+    expect(getReactionEmojis()).toEqual(["👀"]);
+    expect(sendMocks.removeReactionDiscord.mock.calls.map((call) => call[2])).toEqual(["👀"]);
   });
 
   it.each([
@@ -226,7 +225,7 @@ describe("processDiscordMessage ack reactions", () => {
     expect(getReactionEmojis()).toEqual(["👀", "📈"]);
   });
 
-  it("keeps one acknowledgement through reasoning, tools, compaction, silence, and success", async () => {
+  it("keeps one acknowledgement through reasoning, tools, compaction, and silence, then clears it", async () => {
     vi.useFakeTimers();
     dispatchInboundMessage.mockImplementationOnce(async (params?: DispatchInboundParams) => {
       await params?.replyOptions?.onReasoningStream?.({});
@@ -252,7 +251,7 @@ describe("processDiscordMessage ack reactions", () => {
     await runPromise;
 
     expect(getReactionEmojis()).toEqual(["👀"]);
-    expect(sendMocks.removeReactionDiscord).not.toHaveBeenCalled();
+    expect(sendMocks.removeReactionDiscord.mock.calls.map((call) => call[2])).toEqual(["👀"]);
   });
 });
 
