@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { setTelegramRuntime } from "./runtime.js";
 import { clearTelegramRuntimeForTest } from "./runtime.test-support.js";
 import type { TelegramRuntime } from "./runtime.types.js";
+import { fingerprintTelegramBotToken } from "./token-fingerprint.js";
 import {
   deleteTelegramUpdateOffset,
   prepareTelegramAccount,
@@ -160,6 +161,41 @@ describe("deleteTelegramUpdateOffset", () => {
           staleLastUpdateId: 777,
         },
       ]);
+    });
+  });
+
+  it("resumes a Doctor-migrated offset once its bot identity is stamped", async () => {
+    // Fork cutover contract (upgrade-ops/telegram-offset-stamp.mjs): stamping the identity the
+    // runtime derives from the configured token keeps the migrated cursor instead of discarding it.
+    await withStateDirEnv("openclaw-tg-offset-", async () => {
+      const botToken = "333333:token-c";
+      await updateOffsetStore.register("default", {
+        version: 3,
+        lastUpdateId: 777,
+        botId: "333333",
+        tokenFingerprint: fingerprintTelegramBotToken(botToken),
+      });
+
+      const rotations: unknown[] = [];
+      await expect(
+        readTelegramUpdateOffset({
+          accountId: "default",
+          botToken,
+          onRotationDetected: (info) => {
+            rotations.push(info);
+          },
+        }),
+      ).resolves.toBe(777);
+      await expect(
+        prepareTelegramAccount({
+          accountId: "default",
+          botToken,
+          onRotationDetected: (info) => {
+            rotations.push(info);
+          },
+        }),
+      ).resolves.toBe(777);
+      expect(rotations).toEqual([]);
     });
   });
 
