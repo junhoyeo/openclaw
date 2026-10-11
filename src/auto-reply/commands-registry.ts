@@ -127,6 +127,10 @@ const NATIVE_NAME_OVERRIDES: Record<string, Record<string, string>> = {
   },
 };
 
+export function listNativeCommandNameOverrides(): string[] {
+  return Object.values(NATIVE_NAME_OVERRIDES).flatMap((overrides) => Object.values(overrides));
+}
+
 function resolveNativeName(command: ChatCommandDefinition, provider?: string): string | undefined {
   if (!command.nativeName) {
     return undefined;

@@ -3,7 +3,7 @@ import { listAgentIds, resolveAgentWorkspaceDir } from "../agents/agent-scope.js
 import { buildWorkspaceSkillCommandSpecs, type SkillCommandSpec } from "../agents/skills.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { getRemoteSkillEligibility } from "../infra/skills-remote.js";
-import { listChatCommands } from "./commands-registry.js";
+import { listChatCommands, listNativeCommandNameOverrides } from "./commands-registry.js";
 
 export function listReservedChatSlashCommandNames(extraNames: string[] = []): Set<string> {
   const reserved = new Set<string>();
@@ -18,6 +18,10 @@ export function listReservedChatSlashCommandNames(extraNames: string[] = []): Se
       }
       reserved.add(trimmed.slice(1).toLowerCase());
     }
+  }
+  // Registration and text dispatch must reserve the same provider-specific aliases.
+  for (const name of listNativeCommandNameOverrides()) {
+    reserved.add(name.toLowerCase());
   }
   for (const name of extraNames) {
     const trimmed = name.trim().toLowerCase();

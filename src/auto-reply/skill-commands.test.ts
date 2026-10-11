@@ -6,6 +6,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 // Avoid importing the full chat command registry for reserved-name calculation.
 vi.mock("./commands-registry.js", () => ({
   listChatCommands: () => [],
+  listNativeCommandNameOverrides: () => [],
 }));
 
 vi.mock("../infra/skills-remote.js", () => ({
