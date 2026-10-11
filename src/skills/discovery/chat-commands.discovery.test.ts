@@ -15,6 +15,7 @@ import {
   listSkillCommandsForWorkspace,
   listSkillCommandsForAgents,
   prepareSkillCommandsForAgents,
+  resolveSkillCommandInvocation,
 } from "./chat-commands.js";
 
 const tempDirs = useAutoCleanupTempDirTracker((cleanup) => afterEach(cleanup));
@@ -260,6 +261,60 @@ describe("skill command discovery through workspace loading", () => {
               (command) => command.skillName,
             ),
           ).toEqual(["hidden"]);
+        },
+      );
+    },
+  );
+});
+
+describe("fork regression: Telegram-native export alias stays with the built-in", () => {
+  // junhoyeo/openclaw a8660a04949 + a9bba4be41b: a workspace skill that collides with the
+  // Telegram-native `/export_session` alias must not take it. Registration and text dispatch
+  // agree on the generated name, and the renamed skill stays invocable.
+  it.each(["export-session", "export_session"])(
+    "keeps registration and text dispatch aligned for a %s skill",
+    async (skillName) => {
+      const root = tempDirs.make("fork-export-alias-");
+      const workspaceDir = path.join(root, "main");
+      await writeSkill({
+        dir: path.join(workspaceDir, "skills", skillName),
+        name: skillName,
+        description: "Export collision regression skill",
+      });
+      const bundledSkillsDir = path.join(root, "bundled");
+      await fs.mkdir(bundledSkillsDir);
+      const cfg = {
+        plugins: { enabled: false },
+        agents: { entries: { main: { workspace: workspaceDir, skills: [skillName] } } },
+        skills: { allowBundled: [] },
+      } satisfies OpenClawConfig;
+      await withEnvAsync(
+        { OPENCLAW_STATE_DIR: root, OPENCLAW_BUNDLED_SKILLS_DIR: bundledSkillsDir },
+        async () => {
+          const registered = listSkillCommandsForAgents({ cfg, agentIds: ["main"] });
+          const dispatch = listSkillCommandsForWorkspace({ workspaceDir, cfg, agentId: "main" });
+          expect(registered.map((command) => [command.skillName, command.name])).toEqual([
+            [skillName, "export_session_2"],
+          ]);
+          expect(dispatch.map((command) => command.name)).toEqual(["export_session_2"]);
+          expect(
+            resolveSkillCommandInvocation({
+              commandBodyNormalized: "/export_session run the skill",
+              skillCommands: dispatch,
+            }),
+          ).toBeNull();
+          const renamed = resolveSkillCommandInvocation({
+            commandBodyNormalized: "/export_session_2 run the skill",
+            skillCommands: dispatch,
+          });
+          expect(renamed?.command.skillName).toBe(skillName);
+          expect(renamed?.args).toBe("run the skill");
+          expect(
+            resolveSkillCommandInvocation({
+              commandBodyNormalized: `/skill ${skillName} run the skill`,
+              skillCommands: dispatch,
+            })?.command.skillName,
+          ).toBe(skillName);
         },
       );
     },
